@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Absensi QR SMAN 1 Bendungan</title>
 
+<!-- LIBRARY QR CODE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -25,8 +27,8 @@ body {
 .halaman {
     background: white;
     width: 100%;
-    max-width: 500px;
-    margin: 30px auto;
+    max-width: 520px;
+    margin: 25px auto;
     padding: 30px 20px;
     border-radius: 20px;
     text-align: center;
@@ -36,6 +38,10 @@ body {
 h1, h2 {
     color: #075985;
     margin-bottom: 15px;
+}
+
+h3 {
+    color: #075985;
 }
 
 p {
@@ -50,7 +56,7 @@ button {
     padding: 12px 20px;
     border-radius: 25px;
     cursor: pointer;
-    margin: 8px;
+    margin: 7px;
     font-weight: bold;
 }
 
@@ -62,11 +68,26 @@ button:hover {
     background: #64748b;
 }
 
+.reset {
+    background: #dc2626;
+}
+
+.reset:hover {
+    background: #991b1b;
+}
+
 .siswa {
     background: #e0f2fe;
     padding: 15px;
     margin: 12px 0;
     border-radius: 12px;
+}
+
+.informasi {
+    background: #e0f2fe;
+    padding: 15px;
+    border-radius: 12px;
+    margin: 15px 0;
 }
 
 #kodeQR {
@@ -83,13 +104,6 @@ button:hover {
     border-radius: 12px;
 }
 
-.informasi {
-    background: #e0f2fe;
-    padding: 15px;
-    border-radius: 12px;
-    margin: 15px 0;
-}
-
 .riwayat-item {
     background: #f1f5f9;
     padding: 12px;
@@ -99,32 +113,49 @@ button:hover {
     font-size: 14px;
 }
 
-.tersembunyi {
-    display: none;
+.status {
+    color: #15803d;
+    font-weight: bold;
 }
 
-.status {
-    color: green;
-    font-weight: bold;
+.tersembunyi {
+    display: none;
 }
 
 .catatan {
     font-size: 12px;
     color: #64748b;
 }
+
+.jumlah {
+    background: #075985;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 15px 0;
+}
+
 </style>
 </head>
 
 <body>
 
+<!-- ========================= -->
 <!-- HALAMAN AWAL -->
+<!-- ========================= -->
+
 <section id="halamanAwal" class="halaman">
 
     <h1>Selamat Datang!</h1>
+
     <h2>SMAN 1 Bendungan</h2>
 
     <p>Sistem Absensi QR Code</p>
     <p>Kelas XI</p>
+
+    <div class="jumlah">
+        Total Siswa: 10 Orang
+    </div>
 
     <button onclick="mulaiAbsensi()">
         Mulai Absensi
@@ -143,10 +174,14 @@ button:hover {
 </section>
 
 
+<!-- ========================= -->
 <!-- HALAMAN SISWA -->
+<!-- ========================= -->
+
 <section id="halamanSiswa" class="halaman tersembunyi">
 
-    <h2>Daftar Siswa</h2>
+    <h2>Daftar Siswa Kelas XI</h2>
+
     <p>Silakan pilih nama Anda.</p>
 
     <div id="daftarSiswa"></div>
@@ -158,12 +193,16 @@ button:hover {
 </section>
 
 
-<!-- HALAMAN QR -->
+<!-- ========================= -->
+<!-- HALAMAN QR SISWA -->
+<!-- ========================= -->
+
 <section id="halamanQR" class="halaman tersembunyi">
 
     <h2>QR Code Siswa</h2>
 
     <h3 id="namaSiswa"></h3>
+
     <p id="nisSiswa"></p>
 
     <div id="kodeQR"></div>
@@ -171,7 +210,7 @@ button:hover {
     <p>Tunjukkan QR Code kepada petugas.</p>
 
     <button onclick="downloadQR()">
-        Download QR
+        Download QR Code
     </button>
 
     <br>
@@ -183,17 +222,26 @@ button:hover {
 </section>
 
 
+<!-- ========================= -->
 <!-- HALAMAN PETUGAS -->
+<!-- ========================= -->
+
 <section id="halamanPetugas" class="halaman tersembunyi">
 
     <h2>Halaman Petugas</h2>
+
     <p>SMAN 1 Bendungan</p>
 
     <div class="informasi">
-        <h3 id="hasilScan">Menyiapkan kamera...</h3>
+
+        <h3 id="hasilScan">
+            Menyiapkan kamera...
+        </h3>
+
         <p id="informasiSiswa">
             Kamera akan aktif secara otomatis.
         </p>
+
     </div>
 
     <div id="reader"></div>
@@ -206,7 +254,11 @@ button:hover {
         Kembali
     </button>
 
-    <h3 style="margin-top:25px;">Riwayat Kehadiran</h3>
+    <h3 style="margin-top:25px;">
+        Riwayat Kehadiran
+    </h3>
+
+    <div id="jumlahHadir"></div>
 
     <div id="riwayatAbsensi"></div>
 
@@ -214,19 +266,39 @@ button:hover {
         Download Laporan CSV
     </button>
 
+    <br>
+
+    <button class="reset" onclick="resetAbsensi()">
+        Reset Data Absensi
+    </button>
+
 </section>
 
 
 <script>
 
-// DATA SISWA
+// ====================================
+// 1. DATA SISWA
+// ====================================
+
 const siswa = [
     { nama: "Alfandi", nis: "001", kelas: "XI" },
     { nama: "Putri", nis: "002", kelas: "XI" },
-    { nama: "Kholis", nis: "003", kelas: "XI" }
+    { nama: "Kholis", nis: "003", kelas: "XI" },
+    { nama: "Parno", nis: "004", kelas: "XI" },
+    { nama: "Siti", nis: "005", kelas: "XI" },
+    { nama: "Akmal", nis: "006", kelas: "XI" },
+    { nama: "Diki", nis: "007", kelas: "XI" },
+    { nama: "Ardi", nis: "008", kelas: "XI" },
+    { nama: "Alip", nis: "009", kelas: "XI" },
+    { nama: "Setu", nis: "010", kelas: "XI" }
 ];
 
-// DATA ABSENSI
+
+// ====================================
+// 2. DATA ABSENSI
+// ====================================
+
 let dataAbsensi = JSON.parse(
     localStorage.getItem("dataAbsensi") || "[]"
 );
@@ -235,9 +307,64 @@ let scanner = null;
 let sedangMemproses = false;
 let siswaAktif = null;
 let memulaiKamera = false;
+let audioContext = null;
 
 
-// MENGATUR HALAMAN
+// ====================================
+// 3. SUARA NOTIFIKASI ABSENSI
+// ====================================
+
+function siapkanSuara() {
+
+    const AudioContext =
+        window.AudioContext || window.webkitAudioContext;
+
+    if (!AudioContext) return;
+
+    if (!audioContext) {
+        audioContext = new AudioContext();
+    }
+
+    if (audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+}
+
+
+function suaraAbsensi() {
+
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const volume = audioContext.createGain();
+
+    oscillator.connect(volume);
+    volume.connect(audioContext.destination);
+
+    const waktu = audioContext.currentTime;
+
+    oscillator.type = "sine";
+
+    // Suara ting ting
+    oscillator.frequency.setValueAtTime(880, waktu);
+    oscillator.frequency.setValueAtTime(1174, waktu + 0.12);
+
+    volume.gain.setValueAtTime(0.3, waktu);
+
+    volume.gain.exponentialRampToValueAtTime(
+        0.001,
+        waktu + 0.5
+    );
+
+    oscillator.start(waktu);
+    oscillator.stop(waktu + 0.5);
+}
+
+
+// ====================================
+// 4. MENGATUR HALAMAN
+// ====================================
+
 function tampilkanHalaman(id) {
 
     const halaman = [
@@ -248,47 +375,63 @@ function tampilkanHalaman(id) {
     ];
 
     halaman.forEach(nama => {
+
         document.getElementById(nama)
             .classList.add("tersembunyi");
+
     });
 
     document.getElementById(id)
         .classList.remove("tersembunyi");
+
 }
 
 
-// MULAI ABSENSI SISWA
+// ====================================
+// 5. HALAMAN DAFTAR SISWA
+// ====================================
+
 function mulaiAbsensi() {
 
     tampilkanHalaman("halamanSiswa");
 
     const daftar = document.getElementById("daftarSiswa");
+
     daftar.innerHTML = "";
 
     siswa.forEach(data => {
 
         const kartu = document.createElement("div");
+
         kartu.className = "siswa";
 
         const nama = document.createElement("h3");
+
         nama.textContent = data.nama;
 
         const nis = document.createElement("p");
+
         nis.textContent = "NIS: " + data.nis;
 
         const tombol = document.createElement("button");
+
         tombol.textContent = "Tampilkan QR Code";
 
         tombol.onclick = () => tampilkanQR(data);
 
         kartu.append(nama, nis, tombol);
+
         daftar.appendChild(kartu);
 
     });
+
 }
 
 
-// MENAMPILKAN QR SISWA
+// ====================================
+// 6. MEMBUAT QR CODE
+// ====================================
+
 function tampilkanQR(data) {
 
     siswaAktif = data;
@@ -302,30 +445,44 @@ function tampilkanQR(data) {
         "NIS: " + data.nis;
 
     const tempatQR = document.getElementById("kodeQR");
+
     tempatQR.innerHTML = "";
 
     new QRCode(tempatQR, {
+
         text: data.nis,
+
         width: 200,
+
         height: 200
+
     });
 
 }
 
 
-// DOWNLOAD QR
+// ====================================
+// 7. DOWNLOAD QR CODE
+// ====================================
+
 function downloadQR() {
 
     const tempatQR = document.getElementById("kodeQR");
+
     const gambar = tempatQR.querySelector("img");
+
     const canvas = tempatQR.querySelector("canvas");
 
     let url = "";
 
     if (gambar && gambar.src) {
+
         url = gambar.src;
+
     } else if (canvas) {
+
         url = canvas.toDataURL("image/png");
+
     }
 
     if (!url || !siswaAktif) return;
@@ -333,14 +490,21 @@ function downloadQR() {
     const link = document.createElement("a");
 
     link.href = url;
+
     link.download = "QR-" + siswaAktif.nama + ".png";
+
     link.click();
 
 }
 
 
-// MEMBUKA HALAMAN PETUGAS
+// ====================================
+// 8. MEMBUKA HALAMAN PETUGAS
+// ====================================
+
 async function bukaPetugas() {
+
+    siapkanSuara();
 
     tampilkanHalaman("halamanPetugas");
 
@@ -351,7 +515,10 @@ async function bukaPetugas() {
 }
 
 
-// MEMULAI KAMERA OTOMATIS
+// ====================================
+// 9. KAMERA OTOMATIS
+// ====================================
+
 async function mulaiScan() {
 
     if (memulaiKamera) return;
@@ -360,8 +527,16 @@ async function mulaiScan() {
 
     try {
 
+        if (typeof Html5Qrcode === "undefined") {
+
+            throw new Error("Library QR tidak tersedia.");
+
+        }
+
         if (!scanner) {
+
             scanner = new Html5Qrcode("reader");
+
         }
 
         if (scanner.isScanning) return;
@@ -370,7 +545,9 @@ async function mulaiScan() {
             "Membuka kamera...";
 
         await scanner.start(
+
             { facingMode: "environment" },
+
             {
                 fps: 10,
                 qrbox: {
@@ -401,6 +578,8 @@ async function mulaiScan() {
         document.getElementById("hasilScan").textContent =
             "Kamera gagal dibuka. Periksa izin kamera dan HTTPS.";
 
+        console.error(error);
+
     } finally {
 
         memulaiKamera = false;
@@ -410,13 +589,19 @@ async function mulaiScan() {
 }
 
 
-// PROSES ABSENSI
+// ====================================
+// 10. PROSES ABSENSI
+// ====================================
+
 async function prosesAbsensi(teksQR) {
 
     const nis = teksQR.trim();
 
-    const ditemukan = siswa.find(data => data.nis === nis);
+    const ditemukan = siswa.find(
+        data => data.nis === nis
+    );
 
+    // QR TIDAK TERDAFTAR
     if (!ditemukan) {
 
         document.getElementById("hasilScan").textContent =
@@ -426,23 +611,37 @@ async function prosesAbsensi(teksQR) {
             "NIS tidak terdaftar.";
 
         setTimeout(() => {
+
             sedangMemproses = false;
+
         }, 1500);
 
         return;
+
     }
+
 
     const sekarang = new Date();
 
     const tanggal = [
+
         sekarang.getFullYear(),
+
         String(sekarang.getMonth() + 1).padStart(2, "0"),
+
         String(sekarang.getDate()).padStart(2, "0")
+
     ].join("-");
 
+
+    // CEK ABSENSI GANDA
     const sudahHadir = dataAbsensi.some(data =>
-        data.nis === nis && data.tanggal === tanggal
+
+        data.nis === nis &&
+        data.tanggal === tanggal
+
     );
+
 
     if (sudahHadir) {
 
@@ -453,40 +652,68 @@ async function prosesAbsensi(teksQR) {
             ditemukan.nama + " - NIS " + ditemukan.nis;
 
         setTimeout(() => {
+
             sedangMemproses = false;
+
         }, 1500);
 
         return;
+
     }
 
+
+    // MENYIMPAN DATA ABSENSI
     const catatan = {
+
         nama: ditemukan.nama,
+
         nis: ditemukan.nis,
+
         kelas: ditemukan.kelas,
+
         tanggal: tanggal,
+
         waktu: sekarang.toLocaleTimeString("id-ID"),
+
         status: "Hadir"
+
     };
+
 
     dataAbsensi.push(catatan);
 
+
     localStorage.setItem(
+
         "dataAbsensi",
+
         JSON.stringify(dataAbsensi)
+
     );
+
+
+    // SUARA TING SETELAH BERHASIL
+    suaraAbsensi();
+
 
     document.getElementById("hasilScan").textContent =
         "Absensi berhasil dicatat!";
 
     document.getElementById("informasiSiswa").textContent =
+
         "Nama: " + catatan.nama +
+
         " | NIS: " + catatan.nis +
+
         " | Kelas: " + catatan.kelas +
+
         " | Status: Hadir";
+
 
     tampilkanRiwayat();
 
-    // Jeda sebelum membaca QR berikutnya
+
+    // KAMERA TETAP AKTIF
     setTimeout(() => {
 
         sedangMemproses = false;
@@ -499,15 +726,22 @@ async function prosesAbsensi(teksQR) {
 }
 
 
-// MENGHENTIKAN KAMERA
+// ====================================
+// 11. MENGHENTIKAN KAMERA
+// ====================================
+
 async function hentikanScan() {
 
     if (scanner && scanner.isScanning) {
 
         try {
+
             await scanner.stop();
+
         } catch (error) {
+
             console.log("Kamera sudah berhenti.");
+
         }
 
     }
@@ -517,12 +751,41 @@ async function hentikanScan() {
 }
 
 
-// MENAMPILKAN RIWAYAT
+// ====================================
+// 12. RIWAYAT KEHADIRAN
+// ====================================
+
 function tampilkanRiwayat() {
 
     const tempat = document.getElementById("riwayatAbsensi");
 
     tempat.innerHTML = "";
+
+    const tanggalHariIni = [
+
+        new Date().getFullYear(),
+
+        String(new Date().getMonth() + 1).padStart(2, "0"),
+
+        String(new Date().getDate()).padStart(2, "0")
+
+    ].join("-");
+
+
+    const hadirHariIni = dataAbsensi.filter(data =>
+
+        data.tanggal === tanggalHariIni
+
+    );
+
+    document.getElementById("jumlahHadir").innerHTML =
+
+        "<div class='jumlah'>Jumlah Hadir Hari Ini: " +
+
+        hadirHariIni.length + " / " + siswa.length +
+
+        " siswa</div>";
+
 
     if (dataAbsensi.length === 0) {
 
@@ -530,24 +793,35 @@ function tampilkanRiwayat() {
             "Belum ada siswa yang hadir.";
 
         return;
+
     }
+
 
     dataAbsensi.slice().reverse().forEach(data => {
 
         const item = document.createElement("div");
+
         item.className = "riwayat-item";
 
         const teks = document.createElement("p");
 
         teks.textContent =
+
             data.nama + " | " +
+
             data.nis + " | " +
+
             data.tanggal + " | " +
+
             data.waktu;
 
+
         const status = document.createElement("p");
+
         status.className = "status";
+
         status.textContent = "HADIR";
+
 
         item.append(teks, status);
 
@@ -558,44 +832,70 @@ function tampilkanRiwayat() {
 }
 
 
-// DOWNLOAD LAPORAN
+// ====================================
+// 13. DOWNLOAD LAPORAN CSV
+// ====================================
+
 function downloadLaporan() {
 
     if (dataAbsensi.length === 0) {
+
         alert("Belum ada data absensi.");
+
         return;
+
     }
 
-    let csv = "Nama,NIS,Kelas,Tanggal,Waktu,Status\n";
+
+    let csv =
+        "Nama,NIS,Kelas,Tanggal,Waktu,Status\n";
+
 
     dataAbsensi.forEach(data => {
 
         const baris = [
+
             data.nama,
+
             data.nis,
+
             data.kelas,
+
             data.tanggal,
+
             data.waktu,
+
             data.status
+
         ];
 
+
         csv += baris.map(nilai =>
+
             '"' + String(nilai).replace(/"/g, '""') + '"'
+
         ).join(",") + "\n";
 
     });
 
+
     const file = new Blob(
+
         ["\uFEFF" + csv],
+
         { type: "text/csv;charset=utf-8;" }
+
     );
+
 
     const url = URL.createObjectURL(file);
 
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = "Laporan-Absensi-SMAN1-Bendungan.csv";
+
+    link.download =
+        "Laporan-Absensi-SMAN1-Bendungan.csv";
 
     link.click();
 
@@ -604,7 +904,51 @@ function downloadLaporan() {
 }
 
 
-// KEMBALI KE HALAMAN AWAL
+// ====================================
+// 14. RESET SELURUH DATA ABSENSI
+// ====================================
+
+function resetAbsensi() {
+
+    const konfirmasi = confirm(
+
+        "PERINGATAN!\n\n" +
+
+        "Apakah Anda yakin ingin menghapus SELURUH data absensi?\n\n" +
+
+        "Data yang dihapus tidak dapat dikembalikan."
+
+    );
+
+
+    if (!konfirmasi) return;
+
+
+    dataAbsensi = [];
+
+    localStorage.removeItem("dataAbsensi");
+
+
+    tampilkanRiwayat();
+
+
+    document.getElementById("hasilScan").textContent =
+        "Data absensi berhasil direset!";
+
+
+    document.getElementById("informasiSiswa").textContent =
+        "Silakan mulai absensi kembali.";
+
+
+    alert("Seluruh data absensi berhasil dihapus!");
+
+}
+
+
+// ====================================
+// 15. KEMBALI KE HALAMAN AWAL
+// ====================================
+
 async function kembaliAwal() {
 
     await hentikanScan();
@@ -614,7 +958,10 @@ async function kembaliAwal() {
 }
 
 
-// KEMBALI KE DAFTAR SISWA
+// ====================================
+// 16. KEMBALI KE DAFTAR SISWA
+// ====================================
+
 function kembaliSiswa() {
 
     tampilkanHalaman("halamanSiswa");
