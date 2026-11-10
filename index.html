@@ -1,3 +1,627 @@
-<button onclick="hentikanScan()">
-    Hentikan Kamera
-</button>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Absensi QR SMAN 1 Bendungan</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #075985, #38bdf8);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.halaman {
+    background: white;
+    width: 100%;
+    max-width: 500px;
+    margin: 30px auto;
+    padding: 30px 20px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 5px 20px #0003;
+}
+
+h1, h2 {
+    color: #075985;
+    margin-bottom: 15px;
+}
+
+p {
+    color: #555;
+    margin: 12px 0;
+}
+
+button {
+    background: #0284c7;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    margin: 8px;
+    font-weight: bold;
+}
+
+button:hover {
+    background: #075985;
+}
+
+.kembali {
+    background: #64748b;
+}
+
+.siswa {
+    background: #e0f2fe;
+    padding: 15px;
+    margin: 12px 0;
+    border-radius: 12px;
+}
+
+#kodeQR {
+    display: flex;
+    justify-content: center;
+    margin: 25px auto;
+}
+
+#reader {
+    width: 100%;
+    max-width: 350px;
+    margin: 20px auto;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.informasi {
+    background: #e0f2fe;
+    padding: 15px;
+    border-radius: 12px;
+    margin: 15px 0;
+}
+
+.riwayat-item {
+    background: #f1f5f9;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 8px 0;
+    text-align: left;
+    font-size: 14px;
+}
+
+.tersembunyi {
+    display: none;
+}
+
+.status {
+    color: green;
+    font-weight: bold;
+}
+
+.catatan {
+    font-size: 12px;
+    color: #64748b;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HALAMAN AWAL -->
+<section id="halamanAwal" class="halaman">
+
+    <h1>Selamat Datang!</h1>
+    <h2>SMAN 1 Bendungan</h2>
+
+    <p>Sistem Absensi QR Code</p>
+    <p>Kelas XI</p>
+
+    <button onclick="mulaiAbsensi()">
+        Mulai Absensi
+    </button>
+
+    <br>
+
+    <button onclick="bukaPetugas()">
+        Halaman Petugas
+    </button>
+
+    <p class="catatan">
+        Sistem Absensi Digital SMAN 1 Bendungan
+    </p>
+
+</section>
+
+
+<!-- HALAMAN SISWA -->
+<section id="halamanSiswa" class="halaman tersembunyi">
+
+    <h2>Daftar Siswa</h2>
+    <p>Silakan pilih nama Anda.</p>
+
+    <div id="daftarSiswa"></div>
+
+    <button class="kembali" onclick="kembaliAwal()">
+        Kembali
+    </button>
+
+</section>
+
+
+<!-- HALAMAN QR -->
+<section id="halamanQR" class="halaman tersembunyi">
+
+    <h2>QR Code Siswa</h2>
+
+    <h3 id="namaSiswa"></h3>
+    <p id="nisSiswa"></p>
+
+    <div id="kodeQR"></div>
+
+    <p>Tunjukkan QR Code kepada petugas.</p>
+
+    <button onclick="downloadQR()">
+        Download QR
+    </button>
+
+    <br>
+
+    <button class="kembali" onclick="kembaliSiswa()">
+        Kembali
+    </button>
+
+</section>
+
+
+<!-- HALAMAN PETUGAS -->
+<section id="halamanPetugas" class="halaman tersembunyi">
+
+    <h2>Halaman Petugas</h2>
+    <p>SMAN 1 Bendungan</p>
+
+    <div class="informasi">
+        <h3 id="hasilScan">Menyiapkan kamera...</h3>
+        <p id="informasiSiswa">
+            Kamera akan aktif secara otomatis.
+        </p>
+    </div>
+
+    <div id="reader"></div>
+
+    <p class="catatan">
+        Arahkan kamera ke QR Code siswa.
+    </p>
+
+    <button class="kembali" onclick="kembaliAwal()">
+        Kembali
+    </button>
+
+    <h3 style="margin-top:25px;">Riwayat Kehadiran</h3>
+
+    <div id="riwayatAbsensi"></div>
+
+    <button onclick="downloadLaporan()">
+        Download Laporan CSV
+    </button>
+
+</section>
+
+
+<script>
+
+// DATA SISWA
+const siswa = [
+    { nama: "Alfandi", nis: "001", kelas: "XI" },
+    { nama: "Putri", nis: "002", kelas: "XI" },
+    { nama: "Kholis", nis: "003", kelas: "XI" }
+];
+
+// DATA ABSENSI
+let dataAbsensi = JSON.parse(
+    localStorage.getItem("dataAbsensi") || "[]"
+);
+
+let scanner = null;
+let sedangMemproses = false;
+let siswaAktif = null;
+let memulaiKamera = false;
+
+
+// MENGATUR HALAMAN
+function tampilkanHalaman(id) {
+
+    const halaman = [
+        "halamanAwal",
+        "halamanSiswa",
+        "halamanQR",
+        "halamanPetugas"
+    ];
+
+    halaman.forEach(nama => {
+        document.getElementById(nama)
+            .classList.add("tersembunyi");
+    });
+
+    document.getElementById(id)
+        .classList.remove("tersembunyi");
+}
+
+
+// MULAI ABSENSI SISWA
+function mulaiAbsensi() {
+
+    tampilkanHalaman("halamanSiswa");
+
+    const daftar = document.getElementById("daftarSiswa");
+    daftar.innerHTML = "";
+
+    siswa.forEach(data => {
+
+        const kartu = document.createElement("div");
+        kartu.className = "siswa";
+
+        const nama = document.createElement("h3");
+        nama.textContent = data.nama;
+
+        const nis = document.createElement("p");
+        nis.textContent = "NIS: " + data.nis;
+
+        const tombol = document.createElement("button");
+        tombol.textContent = "Tampilkan QR Code";
+
+        tombol.onclick = () => tampilkanQR(data);
+
+        kartu.append(nama, nis, tombol);
+        daftar.appendChild(kartu);
+
+    });
+}
+
+
+// MENAMPILKAN QR SISWA
+function tampilkanQR(data) {
+
+    siswaAktif = data;
+
+    tampilkanHalaman("halamanQR");
+
+    document.getElementById("namaSiswa").textContent =
+        data.nama;
+
+    document.getElementById("nisSiswa").textContent =
+        "NIS: " + data.nis;
+
+    const tempatQR = document.getElementById("kodeQR");
+    tempatQR.innerHTML = "";
+
+    new QRCode(tempatQR, {
+        text: data.nis,
+        width: 200,
+        height: 200
+    });
+
+}
+
+
+// DOWNLOAD QR
+function downloadQR() {
+
+    const tempatQR = document.getElementById("kodeQR");
+    const gambar = tempatQR.querySelector("img");
+    const canvas = tempatQR.querySelector("canvas");
+
+    let url = "";
+
+    if (gambar && gambar.src) {
+        url = gambar.src;
+    } else if (canvas) {
+        url = canvas.toDataURL("image/png");
+    }
+
+    if (!url || !siswaAktif) return;
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "QR-" + siswaAktif.nama + ".png";
+    link.click();
+
+}
+
+
+// MEMBUKA HALAMAN PETUGAS
+async function bukaPetugas() {
+
+    tampilkanHalaman("halamanPetugas");
+
+    tampilkanRiwayat();
+
+    await mulaiScan();
+
+}
+
+
+// MEMULAI KAMERA OTOMATIS
+async function mulaiScan() {
+
+    if (memulaiKamera) return;
+
+    memulaiKamera = true;
+
+    try {
+
+        if (!scanner) {
+            scanner = new Html5Qrcode("reader");
+        }
+
+        if (scanner.isScanning) return;
+
+        document.getElementById("hasilScan").textContent =
+            "Membuka kamera...";
+
+        await scanner.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: {
+                    width: 220,
+                    height: 220
+                }
+            },
+
+            async (teksQR) => {
+
+                if (sedangMemproses) return;
+
+                sedangMemproses = true;
+
+                await prosesAbsensi(teksQR);
+
+            },
+
+            () => {}
+
+        );
+
+        document.getElementById("hasilScan").textContent =
+            "Kamera aktif! Silakan scan siswa.";
+
+    } catch (error) {
+
+        document.getElementById("hasilScan").textContent =
+            "Kamera gagal dibuka. Periksa izin kamera dan HTTPS.";
+
+    } finally {
+
+        memulaiKamera = false;
+
+    }
+
+}
+
+
+// PROSES ABSENSI
+async function prosesAbsensi(teksQR) {
+
+    const nis = teksQR.trim();
+
+    const ditemukan = siswa.find(data => data.nis === nis);
+
+    if (!ditemukan) {
+
+        document.getElementById("hasilScan").textContent =
+            "QR Code tidak dikenal!";
+
+        document.getElementById("informasiSiswa").textContent =
+            "NIS tidak terdaftar.";
+
+        setTimeout(() => {
+            sedangMemproses = false;
+        }, 1500);
+
+        return;
+    }
+
+    const sekarang = new Date();
+
+    const tanggal = [
+        sekarang.getFullYear(),
+        String(sekarang.getMonth() + 1).padStart(2, "0"),
+        String(sekarang.getDate()).padStart(2, "0")
+    ].join("-");
+
+    const sudahHadir = dataAbsensi.some(data =>
+        data.nis === nis && data.tanggal === tanggal
+    );
+
+    if (sudahHadir) {
+
+        document.getElementById("hasilScan").textContent =
+            "Siswa sudah absen hari ini.";
+
+        document.getElementById("informasiSiswa").textContent =
+            ditemukan.nama + " - NIS " + ditemukan.nis;
+
+        setTimeout(() => {
+            sedangMemproses = false;
+        }, 1500);
+
+        return;
+    }
+
+    const catatan = {
+        nama: ditemukan.nama,
+        nis: ditemukan.nis,
+        kelas: ditemukan.kelas,
+        tanggal: tanggal,
+        waktu: sekarang.toLocaleTimeString("id-ID"),
+        status: "Hadir"
+    };
+
+    dataAbsensi.push(catatan);
+
+    localStorage.setItem(
+        "dataAbsensi",
+        JSON.stringify(dataAbsensi)
+    );
+
+    document.getElementById("hasilScan").textContent =
+        "Absensi berhasil dicatat!";
+
+    document.getElementById("informasiSiswa").textContent =
+        "Nama: " + catatan.nama +
+        " | NIS: " + catatan.nis +
+        " | Kelas: " + catatan.kelas +
+        " | Status: Hadir";
+
+    tampilkanRiwayat();
+
+    // Jeda sebelum membaca QR berikutnya
+    setTimeout(() => {
+
+        sedangMemproses = false;
+
+        document.getElementById("hasilScan").textContent =
+            "Silakan scan siswa berikutnya.";
+
+    }, 1500);
+
+}
+
+
+// MENGHENTIKAN KAMERA
+async function hentikanScan() {
+
+    if (scanner && scanner.isScanning) {
+
+        try {
+            await scanner.stop();
+        } catch (error) {
+            console.log("Kamera sudah berhenti.");
+        }
+
+    }
+
+    sedangMemproses = false;
+
+}
+
+
+// MENAMPILKAN RIWAYAT
+function tampilkanRiwayat() {
+
+    const tempat = document.getElementById("riwayatAbsensi");
+
+    tempat.innerHTML = "";
+
+    if (dataAbsensi.length === 0) {
+
+        tempat.textContent =
+            "Belum ada siswa yang hadir.";
+
+        return;
+    }
+
+    dataAbsensi.slice().reverse().forEach(data => {
+
+        const item = document.createElement("div");
+        item.className = "riwayat-item";
+
+        const teks = document.createElement("p");
+
+        teks.textContent =
+            data.nama + " | " +
+            data.nis + " | " +
+            data.tanggal + " | " +
+            data.waktu;
+
+        const status = document.createElement("p");
+        status.className = "status";
+        status.textContent = "HADIR";
+
+        item.append(teks, status);
+
+        tempat.appendChild(item);
+
+    });
+
+}
+
+
+// DOWNLOAD LAPORAN
+function downloadLaporan() {
+
+    if (dataAbsensi.length === 0) {
+        alert("Belum ada data absensi.");
+        return;
+    }
+
+    let csv = "Nama,NIS,Kelas,Tanggal,Waktu,Status\n";
+
+    dataAbsensi.forEach(data => {
+
+        const baris = [
+            data.nama,
+            data.nis,
+            data.kelas,
+            data.tanggal,
+            data.waktu,
+            data.status
+        ];
+
+        csv += baris.map(nilai =>
+            '"' + String(nilai).replace(/"/g, '""') + '"'
+        ).join(",") + "\n";
+
+    });
+
+    const file = new Blob(
+        ["\uFEFF" + csv],
+        { type: "text/csv;charset=utf-8;" }
+    );
+
+    const url = URL.createObjectURL(file);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "Laporan-Absensi-SMAN1-Bendungan.csv";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+}
+
+
+// KEMBALI KE HALAMAN AWAL
+async function kembaliAwal() {
+
+    await hentikanScan();
+
+    tampilkanHalaman("halamanAwal");
+
+}
+
+
+// KEMBALI KE DAFTAR SISWA
+function kembaliSiswa() {
+
+    tampilkanHalaman("halamanSiswa");
+
+}
+
+</script>
+
+</body>
+</html>
